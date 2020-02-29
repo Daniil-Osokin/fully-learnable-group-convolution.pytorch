@@ -1,0 +1,4 @@
+*_checkpoints
+.idea
+data/cifar-10*
+*__pycache__*
