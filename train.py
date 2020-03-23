@@ -11,7 +11,7 @@ from models.mobilenet_v2 import MobileNetV2
 from test import test
 
 
-def train(checkpoint_path, num_groups, use_standard_group_convolutions, checkpoints_folder):
+def train(checkpoint_path, num_groups, use_standard_group_convolutions, checkpoints_folder, num_epochs_to_dump_net):
     net = MobileNetV2(groups_in_1x1=num_groups, use_flgc=(not use_standard_group_convolutions))
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     net = net.to(device)
@@ -47,6 +47,9 @@ def train(checkpoint_path, num_groups, use_standard_group_convolutions, checkpoi
 
     for epoch_id in range(start_epoch, 400):
         print('Epoch: {}'.format(epoch_id))
+        if num_epochs_to_dump_net is not None:
+            if epoch_id % num_epochs_to_dump_net == 0:
+                torch.save({'net': net}, os.path.join(checkpoints_folder, 'net_epoch_{}.pth'.format(epoch_id)))
         net.train()
         for batch_idx, (inputs, targets) in enumerate(trainloader):
             inputs, targets = inputs.to(device), targets.to(device)
@@ -89,10 +92,11 @@ if __name__ == '__main__':
                         help='use standard group convolutions instead of fully learnable')
     parser.add_argument('--experiment-name', type=str, default='default',
                         help='experiment name to create folder for checkpoints')
+    parser.add_argument('--num-epochs-to-dump-net', type=int, default=None, help='number of epochs to dump network to futher analyze it')
     args = parser.parse_args()
 
     checkpoints_folder = '{}_checkpoints'.format(args.experiment_name)
     if not os.path.exists(checkpoints_folder):
         os.makedirs(checkpoints_folder)
 
-    train(args.checkpoint_path, args.num_groups, args.use_standard_group_convolutions, checkpoints_folder)
+    train(args.checkpoint_path, args.num_groups, args.use_standard_group_convolutions, checkpoints_folder, args.num_epochs_to_dump_net)
